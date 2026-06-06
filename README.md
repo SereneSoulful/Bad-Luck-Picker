@@ -1,249 +1,249 @@
-# 🎲 Bad Luck Picker — Classroom Random Picker
+# 🎲 Bad Luck Picker — 课堂随机抽取器
 
-> A **Apple-style × Genshin Impact gacha animation** WPF desktop classroom picker app.  
-> Randomly picks from the student list with non-repeating selection, stunning animations, and smooth interaction.
+> 一款 **Apple 风格 × 原神抽卡动画** 的 WPF 桌面课堂点名工具。  
+> 公平无重复随机抽取，搭配惊艳视觉动效，让课堂互动充满仪式感。
 
 [![.NET Framework](https://img.shields.io/badge/.NET%20Framework-4.7.2-512BD4?logo=dotnet)](https://dotnet.microsoft.com/download/dotnet-framework/net472)
 [![Platform](https://img.shields.io/badge/platform-Windows-blue?logo=windows)](https://www.microsoft.com/windows)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![WPF](https://img.shields.io/badge/UI-WPF-5C2D91?logo=windows)](https://learn.microsoft.com/en-us/dotnet/desktop/wpf/)
+[![WPF](https://img.shields.io/badge/UI-WPF-5C2D91?logo=windows)](https://learn.microsoft.com/zh-cn/dotnet/desktop/wpf/)
 
 ---
 
-## ✨ Features
+## ✨ 功能特性
 
-| Feature | Description |
+| 特性 | 说明 |
 |---------|-------------|
-| 🎯 **Random Pick** | Fair non-repeating random selection (HashSet O(n) unbiased sampling) |
-| 🔢 **Adjustable Count** | Stepper control supports 1~N people, 3 results per row |
-| 🪟 **Borderless Window** | Custom rounded-corner window + macOS-style traffic light (red/yellow/green) title bar |
-| ✨ **Genshin Gacha Anim** | Deep-space star overlay → golden light beam sweep → cards pop out one by one (scale + glow) → fullscreen white flash finale |
-| ⏭️ **Skip Animation** | Click anywhere during animation to skip right to results |
-| 📋 **Result Animation** | Fade-in + slide-up elastic animation for result cards |
-| 🔔 **System Tray** | Minimize to tray, stay resident in background |
-| ⚡ **Performance** | Object pool for card reuse, pre-cached brushes/shadows/animations, frozen Freezable resources |
+| 🎯 **随机抽取** | 公平无重复随机算法（HashSet O(n) 无偏采样） |
+| 🔢 **人数可调** | Stepper 控件支持 1~N 人，每行展示 3 个结果 |
+| 🪟 **无边框窗口** | 自定义圆角窗口 + macOS 风格红绿灯标题栏 |
+| ✨ **原神抽卡动画** | 深空星空叠加 → 金光扫过 → 卡牌依次弹出（缩放+光晕）→ 全屏白光炸裂收尾 |
+| ⏭️ **跳过动画** | 动画期间点击任意位置即可直接跳到结果 |
+| 📋 **结果动画** | 结果卡牌淡入 + 弹性上滑动画 |
+| 🔔 **系统托盘** | 最小化到托盘，常驻后台 |
+| ⚡ **性能优化** | 卡牌对象池复用、画刷/阴影/动画预缓存冻结、Storyboard 复用 |
 
 ---
 
-## 🖥️ Screenshot
+## 🖥️ 界面预览
 
 ```
 ┌──────────────────────────────────┐
-│  ●  ●  ●   Bad Luck Picker      │  ← macOS traffic lights + draggable title bar
+│  ●  ●  ●   Bad Luck Picker      │  ← macOS 红绿灯 + 可拖拽标题栏
 ├──────────────────────────────────┤
 │                                  │
 │  ┌────────────────────────────┐  │
-│  │ 🎲  This Time's Pick       │  │
+│  │ 🎲  本次抽取              │  │
 │  │                            │  │
-│  │     Alice   Bob   Carol    │  │  ← White card result area (fade-in)
-│  │     Dave   Eve             │  │
+│  │     小明   小红   小华     │  │  ← 白色卡片结果区（淡入）
+│  │     小刚   小丽             │  │
 │  └────────────────────────────┘  │
 │                                  │
 │  ┌────────────────────────────┐  │
-│  │ Pick Count        [−] 3 [+]│  │  ← Stepper
-│  │ 8 students available      │  │
+│  │ 抽取人数         [−] 3 [+]│  │  ← Stepper 步进器
+│  │ 共 8 名学生可选           │  │
 │  └────────────────────────────┘  │
 │                                  │
 │  ┌────────────────────────────┐  │
-│  │       🎰  Pick Randomly    │  │  ← Blue action button
+│  │       🎰  随机抽取         │  │  ← 蓝色操作按钮
 │  └────────────────────────────┘  │
-│                       [signature]│
+│                       [艺术签名]  │
 └──────────────────────────────────┘
 ```
 
 ---
 
-## 🎬 Gacha Animation Sequence
+## 🎬 抽卡动画序列
 
 ```
-Click "Pick Randomly"
+点击"随机抽取"
     │
     ▼
 ┌──────────────┐
-│ Overlay Fade  │  Deep blue-purple gradient + 80 twinkling stars
+│ 遮罩淡入      │  深蓝紫渐变底 + 80 颗闪烁星星
 └──────┬───────┘
        ▼
 ┌──────────────┐
-│ Light Beam    │  Semi-transparent golden beam sweeps left → right
+│ 金光扫过      │  半透明金色光束从左 → 右扫过
 └──────┬───────┘
        ▼
 ┌──────────────┐
-│ Cards Pop Out │  Scale(0.6→1.0) + slide-up + fade-in
-│               │  Glowing border + star rating (★)
-│               │  Fan-out layout for multiple picks
+│ 卡牌弹出      │  Scale(0.6→1.0) + 上滑 + 淡入
+│               │  发光边框 + 星级评价（★）
+│               │  多人时扇形展开布局
 └──────┬───────┘
        ▼
 ┌──────────────┐
-│ White Flash   │  0.5s white flash → overlay fade out
+│ 白光炸裂      │  0.5s 全屏白光闪烁 → 遮罩淡出
 └──────┬───────┘
        ▼
 ┌──────────────┐
-│ Show Results  │  Result cards fade in, stepper restored
+│ 展示结果      │  结果卡牌淡入，Stepper 恢复
 └──────────────┘
 ```
 
-> 💡 Click anywhere during the animation to **skip** directly to results.
+> 💡 动画期间点击任意位置可**跳过**动画直接查看结果。
 
 ---
 
-## 🛠️ Tech Stack
+## 🛠️ 技术栈
 
-| Layer | Technology |
+| 层级 | 技术 |
 |-------|------------|
-| **Framework** | .NET Framework 4.7.2 |
-| **UI** | WPF (Windows Presentation Foundation) |
-| **Language** | C# 7.3 + XAML |
-| **Target** | Windows (x64, AnyCPU) |
-| **IDE** | Visual Studio 2017+ |
+| **框架** | .NET Framework 4.7.2 |
+| **界面** | WPF（Windows Presentation Foundation） |
+| **语言** | C# 7.3 + XAML |
+| **目标平台** | Windows（x64，AnyCPU） |
+| **开发工具** | Visual Studio 2017+ |
 
-### Core Dependencies
+### 核心依赖
 
-- `PresentationFramework` — WPF core
-- `System.Windows.Forms` — NotifyIcon system tray
-- `System.Drawing` — Icon / image processing
+- `PresentationFramework` — WPF 核心
+- `System.Windows.Forms` — NotifyIcon 系统托盘
+- `System.Drawing` — 图标/图像处理
 
 ---
 
-## 📁 Project Structure
+## 📁 项目结构
 
 ```
 Bad-Luck-Picker/
-├── App.xaml                    # Application entry definition
-├── App.xaml.cs                 # Application code-behind
-├── App.config                  # Runtime version config
-├── MainWindow.xaml             # Main window UI (XAML layout + styles + animation resources)
-├── MainWindow.xaml.cs          # Main window logic (pick algorithm + animation control + perf optimization)
-├── Choose students.csproj      # MSBuild project file
-├── Choose students.sln         # Visual Studio solution
+├── App.xaml                    # 应用程序入口定义
+├── App.xaml.cs                 # 应用程序代码逻辑
+├── App.config                  # 运行时版本配置
+├── MainWindow.xaml             # 主窗口界面（XAML 布局 + 样式 + 动画资源）
+├── MainWindow.xaml.cs          # 主窗口逻辑（抽取算法 + 动画控制 + 性能优化）
+├── Choose students.csproj      # MSBuild 项目文件
+├── Choose students.sln         # Visual Studio 解决方案
 ├── Properties/
-│   ├── AssemblyInfo.cs         # Assembly metadata
-│   ├── Resources.resx          # Resource file
-│   └── Settings.settings       # Application settings
-├── 优化界面.ico                # App icon
-├──     # Signature image resource
+│   ├── AssemblyInfo.cs         # 程序集元数据
+│   ├── Resources.resx          # 资源文件
+│   └── Settings.settings       # 应用程序设置
+├── 优化界面.ico                # 应用图标
+├──     # 签名图片资源
 └── .gitignore
 ```
 
 ---
 
-## 🚀 Quick Start
+## 🚀 快速开始
 
-### Prerequisites
+### 环境要求
 
-- Windows 7 SP1 or later
+- Windows 7 SP1 及以上
 - [.NET Framework 4.7.2 Runtime](https://dotnet.microsoft.com/download/dotnet-framework/net472)
-- (Development) Visual Studio 2017+ with `.NET Desktop Development` workload
+- （开发）Visual Studio 2017+，安装 `.NET 桌面开发` 工作负载
 
-### Build & Run
+### 构建与运行
 
 ```bash
-# Clone the repo
-git clone https://github.com/YOUR_USERNAME/Bad-Luck-Picker.git
+# 克隆仓库
+git clone https://github.com/SereneSoulful/Bad-Luck-Picker.git
 cd Bad-Luck-Picker
 
-# Build with MSBuild
+# 使用 MSBuild 构建
 msbuild "Choose students.sln" /p:Configuration=Release /p:Platform="Any CPU"
 
-# Run directly
+# 直接运行
 start bin\Release\"Choose students.exe"
 ```
 
 ### Visual Studio
 
-1. Double-click `Choose students.sln` to open the solution
-2. Select `Release | Any CPU` configuration
-3. Press `F5` to debug / `Ctrl+Shift+B` to build
+1. 双击 `Choose students.sln` 打开解决方案
+2. 选择 `Release | Any CPU` 配置
+3. 按 `F5` 调试 / `Ctrl+Shift+B` 构建
 
 ---
 
-## 📝 Configuration
+## 📝 自定义配置
 
-### Customize Student List
+### 修改学生名单
 
-Edit the `_students` list in `MainWindow.xaml.cs`:
+编辑 `MainWindow.xaml.cs` 中的 `_students` 列表：
 
 ```csharp
 private readonly List<string> _students = new List<string>
 {
-    "Alice", "Bob", "Carol", "Dave",
-    "Eve", "Frank", "Grace", "Hank"
+    "张三", "李四", "王五", "赵六",
+    "孙七", "周八", "吴九", "郑十"
 };
 ```
 
-### Tweak Animation Parameters
+### 调整动画参数
 
-| Variable / Resource | Location | Description |
+| 参数/资源 | 位置 | 说明 |
 |---------------------|----------|-------------|
-| Star count | `MainWindow.xaml.cs:GenerateStars()` | Default 80 |
-| Light beam speed | `MainWindow.xaml` → `LightBeamAnim` Storyboard | Duration `0:0:0.9` |
-| Result fade-in speed | `MainWindow.xaml` → `FadeInResult` Storyboard | Duration `0:0:0.4` |
-| Default pick count | `MainWindow.xaml.cs:_pickCount` | Default 1 |
+| 星星数量 | `MainWindow.xaml.cs:GenerateStars()` | 默认 80 |
+| 光束扫过速度 | `MainWindow.xaml` → `LightBeamAnim` Storyboard | 时长 `0:0:0.9` |
+| 结果淡入速度 | `MainWindow.xaml` → `FadeInResult` Storyboard | 时长 `0:0:0.4` |
+| 默认抽取人数 | `MainWindow.xaml.cs:_pickCount` | 默认 1 |
 
 ---
 
-## 🎨 Design Details
+## 🎨 设计细节
 
-### Apple-style UI
+### Apple 风格 UI
 
-- **Borderless window**: `WindowStyle="None"` + `AllowsTransparency="True"` + `CornerRadius="20"`
-- **Traffic lights**: Red (#FF5F57) close / Yellow (#FEBC2E) minimize / Green (#28C840) decorative
-- **Color scheme**: `#007AFF` Apple Blue + `#F2F2F7` light gray + `#1D1D1F` dark text
-- **Stepper**: Circular ± buttons mimicking iOS Stepper control
+- **无边框窗口**：`WindowStyle="None"` + `AllowsTransparency="True"` + `CornerRadius="20"`
+- **红绿灯**：红色(#FF5F57)关闭 / 黄色(#FEBC2E)最小化 / 绿色(#28C840)装饰
+- **配色方案**：`#007AFF` Apple 蓝 + `#F2F2F7` 浅灰 + `#1D1D1F` 深色文字
+- **Stepper**：圆形 ± 按钮，模仿 iOS Stepper 控件
 
-### Genshin Gacha Animation
+### 原神抽卡动画
 
-- **Star background**: LinearGradientBrush deep blue-purple + 80 Ellipses with independent twinkle anims
-- **Light beam**: Transparent → gold gradient → transparent Rectangle, SineEase sweep
-- **Card pop-out**: BackEase elastic scale + slide-up + fade-in, DropShadowEffect outer glow
-- **Star ratings**: First card gets 5★ (gold), others get 4★ (purple) / 3★ (blue) random rarity
+- **星空背景**：LinearGradientBrush 深蓝紫渐变 + 80 个 Ellipse 各自独立闪烁动画
+- **金光扫过**：透明 → 金色渐变 → 透明 Rectangle，SineEase 缓动扫过
+- **卡牌弹出**：BackEase 弹性缩放 + 上滑 + 淡入，DropShadowEffect 外发光
+- **星级评级**：首张卡 5★（金色），其余 4★（紫色）/ 3★（蓝色）随机稀有度
 
-### Performance Optimizations
+### 性能优化
 
-| Optimization | Implementation |
+| 优化项 | 实现方式 |
 |-------------|----------------|
-| **Object Pool** | `Queue<Border> _cardPool` recycles card UI elements |
-| **Brush Cache** | `Dictionary<int, SolidColorBrush> _colorBrushes` pre-created + `Freeze()` |
-| **Shadow Cache** | `Dictionary<int, DropShadowEffect> _shadowEffects` reuse reduces GPU overhead |
-| **Animation Cache** | `_fadeAnim` / `_scaleXAnim` / `_scaleYAnim` / `_moveAnim` pre-created + `Freeze()` |
-| **Storyboard Reuse** | `_fadeInStoryboard` / `_beamStoryboard` / `_flashStoryboard` one-time event binding |
-| **Random Algorithm** | `HashSet` O(n) unbiased sampling replacing `OrderBy(Random)` O(n log n) |
-| **Timer Tracking** | `List<DispatcherTimer> _activeTimers` unified management, `ClearAllTimers()` prevents leaks |
+| **对象池** | `Queue<Border> _cardPool` 回收卡牌 UI 元素 |
+| **画刷缓存** | `Dictionary<int, SolidColorBrush> _colorBrushes` 预创建 + `Freeze()` 冻结 |
+| **阴影缓存** | `Dictionary<int, DropShadowEffect> _shadowEffects` 复用，减少 GPU 开销 |
+| **动画缓存** | `_fadeAnim` / `_scaleXAnim` / `_scaleYAnim` / `_moveAnim` 预创建 + `Freeze()` 冻结 |
+| **Storyboard 复用** | `_fadeInStoryboard` / `_beamStoryboard` / `_flashStoryboard` 一次性事件绑定 |
+| **随机算法** | `HashSet` O(n) 无偏采样，替代 `OrderBy(Random)` 的 O(n log n) |
+| **定时器管理** | `List<DispatcherTimer> _activeTimers` 统一管理，`ClearAllTimers()` 防泄漏 |
 
 ---
 
-## 🐛 Known Issues
+## 🐛 已知问题
 
-- System tray icon functionality (`_notifyIcon`) not fully implemented in `InitNotifyIcon()`
-- Window may not appear in taskbar after minimizing (needs verification on newer Windows versions)
-
----
-
-## 🤝 Contributing
-
-Contributions, issues and feature requests are welcome! Feel free to check the [issues page](https://github.com/YOUR_USERNAME/Bad-Luck-Picker/issues).
-
-### How to Contribute
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+- 系统托盘图标功能（`_notifyIcon`）在 `InitNotifyIcon()` 中尚未完全实现
+- 最小化后窗口可能不在任务栏显示（需在较新 Windows 版本验证）
 
 ---
 
-## 📄 License
+## 🤝 参与贡献
 
-This project is licensed under the [MIT License](LICENSE) — see the LICENSE file for details.
+欢迎提交 Issue、Feature Request 和 Pull Request！请访问 [Issues 页面](https://github.com/SereneSoulful/Bad-Luck-Picker/issues)。
+
+### 贡献流程
+
+1. Fork 本仓库
+2. 创建功能分支（`git checkout -b feature/amazing-feature`）
+3. 提交更改（`git commit -m '添加某某功能'`）
+4. 推送到分支（`git push origin feature/amazing-feature`）
+5. 发起 Pull Request
 
 ---
 
-## 👩‍🏫 Author
+## 📄 开源协议
 
-**Lina** — Making classroom interaction fun, starting with "Who's the unlucky one?" 🎉
-
-> Qingdao, Shandong, China
+本项目基于 [MIT License](LICENSE) 开源 —— 详见 LICENSE 文件。
 
 ---
 
-*Built with ❤️ using WPF & .NET Framework 4.7.2*
+## 👩‍🏫 作者
+
+**Lina** — 让课堂互动更有趣，从"谁是倒霉蛋？"开始 🎉
+
+> 
+
+---
+
+*用 WPF & .NET Framework 4.7.2 倾心打造*
