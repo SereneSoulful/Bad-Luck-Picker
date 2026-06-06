@@ -1,41 +1,90 @@
-# Visual Studio
+## ===================================================
+##  Visual Studio / .NET WPF Project
+##  Bad Luck Picker — 课堂随机抽人工具
+## ===================================================
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+Generated\ Files/
+
+# Visual Studio cache / config
 .vs/
 *.suo
 *.user
 *.userosscache
 *.sln.docstates
 *.userprefs
+*.csproj.user
 
-# Build outputs
-bin/
-obj/
-*.exe
-*.dll
-*.pdb
-*.cache
+# Visual Studio Code
+.vscode/
+
+# Rider
+.idea/
 
 # NuGet
-packages/
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
 *.nupkg
+**/[Pp]ackages/repositories.config
 
-# Signing keys
+# Build results of other tools
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*_i.c
+*_p.c
+*.ilk
+*.meta
+*.obj
+*.pch
+*.pdb
+*.pgc
+*.pgd
+*.rsp
+*.sbr
+*.tlb
+*.tli
+*.tlh
+*.tmp
+*.tmp_proj
+*.log
+*.vspscc
+*.vssscc
+.builds
+*.pidb
+*.svclog
+*.scc
+
+# Signing keys (NEVER commit these!)
 *.pfx
 *.snk
 
-# Personal images (signature)
-
-Lina圆体艺术签名生成*.png
-
-# OS files
-.DS_Store
-Thumbs.db
-desktop.ini
-
-# IDE
-.idea/
-.vscode/
-*.swp
-*~
-
-# WorkBuddy local workspace
+# WorkBuddy project data
 .workbuddy/
+
+# OS junk
+[Dd]esktop.ini
+Thumbs.db
+*.DS_Store
+
+# Publish output
+[Pp]ublish/
+发布/
+
+# Application Insights
+**/AppInsights.config
+**/Connected Services/
