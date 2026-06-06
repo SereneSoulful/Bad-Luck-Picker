@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36310.24
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Choose students", "Choose students.csproj", "{4D5F5383-45B6-4E81-850A-0BE34EAAD993}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4D5F5383-45B6-4E81-850A-0BE34EAAD993}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4D5F5383-45B6-4E81-850A-0BE34EAAD993}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4D5F5383-45B6-4E81-850A-0BE34EAAD993}.Debug|x64.ActiveCfg = Debug|x64
+		{4D5F5383-45B6-4E81-850A-0BE34EAAD993}.Debug|x64.Build.0 = Debug|x64
+		{4D5F5383-45B6-4E81-850A-0BE34EAAD993}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4D5F5383-45B6-4E81-850A-0BE34EAAD993}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4D5F5383-45B6-4E81-850A-0BE34EAAD993}.Release|x64.ActiveCfg = Release|x64
+		{4D5F5383-45B6-4E81-850A-0BE34EAAD993}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {BE2EE952-781F-4BCF-B094-F4610A064BF5}
+	EndGlobalSection
+EndGlobal

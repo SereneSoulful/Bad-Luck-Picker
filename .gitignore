@@ -1,0 +1,41 @@
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+# Build outputs
+bin/
+obj/
+*.exe
+*.dll
+*.pdb
+*.cache
+
+# NuGet
+packages/
+*.nupkg
+
+# Signing keys
+*.pfx
+*.snk
+
+# Personal images (signature)
+
+Lina圆体艺术签名生成*.png
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*~
+
+# WorkBuddy local workspace
+.workbuddy/
