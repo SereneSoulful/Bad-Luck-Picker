@@ -414,7 +414,7 @@ namespace Choose_students
             chip.CornerRadius = new CornerRadius(0);
             chip.Opacity = 0;
             chip.RenderTransformOrigin = new Point(0.5, 0.5);
-            chip.RenderTransform = new ScaleTransform(0.8, 0.8);
+            chip.RenderTransform = new ScaleTransform(1.0, 1.0);
             chip.Child = new Border
             {
                 BorderBrush = _innerBevelBrush,
@@ -469,6 +469,8 @@ namespace Choose_students
                 }
 
                 var scale = (ScaleTransform)chip.RenderTransform;
+                scale.ScaleX = 0.8;
+                scale.ScaleY = 0.8;
                 scale.BeginAnimation(ScaleTransform.ScaleXProperty, BuildScaleKeyframes());
                 scale.BeginAnimation(ScaleTransform.ScaleYProperty, BuildScaleKeyframes());
             }
@@ -569,13 +571,6 @@ namespace Choose_students
         private void PlayPulseAndEnd()
         {
             if (_skipped) return;
-
-            if (_reducedMotion)
-            {
-                var holdTimer = CreateTimer(TimeSpan.FromMilliseconds(500), FadeOutOverlay);
-                holdTimer.Start();
-                return;
-            }
 
             PulseRing.Opacity = 0.9;
             PulseRingScale.ScaleX = 0.6;
