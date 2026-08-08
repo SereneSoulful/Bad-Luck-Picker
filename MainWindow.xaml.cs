@@ -595,13 +595,33 @@ namespace Choose_students
             ((Storyboard)FindResource("BreathRingAnim")).Stop();
             _stackThickness = null;
 
-            var lines = new List<string>();
-            for (int i = 0; i < _pendingResults.Count; i += 3)
-                lines.Add(string.Join("　", _pendingResults.Skip(i).Take(3)));
-            SetResult(string.Join("\n", lines));
+            SetResult(BuildResultLines(_pendingResults));
 
             BtnRun.IsEnabled = true;
             StartIdleAmbient();
+        }
+
+        // 结果排版：每行最多 2 个名字；双字名补全角空格到最长名字宽度，保证上下行对齐；
+        // 最后一行若只有一个名字，则不补空格
+        private string BuildResultLines(List<string> names)
+        {
+            var lines = new List<string>();
+            for (int i = 0; i < names.Count; i += 2)
+            {
+                bool singleLast = names.Count - i == 1;
+                var row = new List<string>();
+                for (int j = 0; j < 2; j++)
+                {
+                    int idx = i + j;
+                    if (idx >= names.Count) break;
+                    string name = names[idx];
+                    if (!singleLast && name.Length < _maxNameLen)
+                        name = name + new string('　', _maxNameLen - name.Length);
+                    row.Add(name);
+                }
+                lines.Add(string.Join("　", row));
+            }
+            return string.Join("\n", lines);
         }
 
         // ===== Skip =====
