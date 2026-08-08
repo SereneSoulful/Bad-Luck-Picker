@@ -237,6 +237,7 @@ namespace Choose_students
             card.ClearValue(UIElement.OpacityProperty);
             card.ClearValue(UIElement.RenderTransformProperty);
             card.BeginAnimation(UIElement.OpacityProperty, null);
+            card.BeginAnimation(Canvas.LeftProperty, null);
             card.BeginAnimation(Canvas.TopProperty, null);
             _cardPool.Enqueue(card);
         }
@@ -371,6 +372,10 @@ namespace Choose_students
             else if (total <= 18) { fontSize = 26; }
             else                  { fontSize = 21; }
 
+            // 第一张是居中的大主牌，后续插入的牌彼此同尺寸
+            bool isLead = index == 0;
+            if (isLead) fontSize += 8;
+
             var text = new TextBlock
             {
                 Text = name,
@@ -387,8 +392,12 @@ namespace Choose_students
             double textH = text.DesiredSize.Height;
 
             // 直角像素卡：深色外框 + 高光内框
-            double chipW = Math.Min(textW + 48, canvasW - 60);
-            double chipH = textH + 24;
+            double chipW = isLead
+                ? Math.Min(textW + 72, canvasW - 48)
+                : Math.Min(textW + 56, canvasW - 56);
+            double chipH = isLead
+                ? textH + 40
+                : textH + 30;
 
             var chip = GetCardFromPool();
             chip.Width = chipW;
@@ -408,20 +417,30 @@ namespace Choose_students
                 Child = text
             };
 
-            // 扑克牌叠放：以中心为基准呈扇形偏移，后一张压前一张（ZIndex 递增）
-            double centerX = (canvasW - chipW) / 2.0;
-            double centerY = canvasH / 2.0 - chipH / 2.0 - 14;
-            double chipX = centerX;
-            double chipY = centerY;
-            if (total > 1)
+            // 牌堆叠放：主牌居中；后续牌从斜上方交替插入，
+            // 左一张右一张地错位覆盖，牌堆逐层变厚（ZIndex 递增）
+            double anchorX = (canvasW - chipW) / 2.0;
+            double anchorY = canvasH / 2.0 - chipH / 2.0 - 14;
+            double chipX = anchorX;
+            double chipY = anchorY;
+            double startX = chipX;
+            double startY = chipY;
+            bool fromLeft = true;
+            if (!isLead)
             {
-                double roomX = Math.Max(0, canvasW - chipW - 30);
-                double roomY = Math.Max(0, canvasH - chipH - 24);
-                double stepX = Math.Min(30, Math.Max(8, roomX / (total - 1)));
-                double stepY = Math.Min(18, Math.Max(5, roomY / (total - 1)));
-                double off = index - (total - 1) / 2.0;
-                chipX = centerX + off * stepX;
-                chipY = centerY - off * stepY;
+                // 奇数张从左上插入，偶数张从右上插入
+                fromLeft = index % 2 == 1;
+                double offset = Math.Min(34, 12 + index * 3);
+                double offsetY = Math.Min(26, 8 + index * 2);
+                chipX = anchorX + (fromLeft ? -offset : offset);
+                chipY = anchorY - offsetY;
+                startX = chipX + (fromLeft ? -110 : 110);
+                startY = chipY - 90;
+            }
+            else
+            {
+                // 主牌从下方三档硬切弹出
+                startY = chipY + 40;
             }
 
             Canvas.SetLeft(chip, chipX);
@@ -435,10 +454,20 @@ namespace Choose_students
             }
             else
             {
-                // 三档硬切步进：从牌堆位置弹出，跳两下后落定
-                Canvas.SetTop(chip, chipY + 40);
+                // 三档硬切步进：主牌下方弹出；副牌从对应斜上方滑入
+                Canvas.SetTop(chip, startY);
                 chip.BeginAnimation(UIElement.OpacityProperty, BuildFadeKeyframes());
-                chip.BeginAnimation(Canvas.TopProperty, BuildMoveKeyframes(chipY));
+                if (isLead)
+                {
+                    chip.BeginAnimation(Canvas.TopProperty, BuildMoveKeyframes(chipY));
+                }
+                else
+                {
+                    chip.BeginAnimation(Canvas.LeftProperty,
+                        BuildInsertKeyframes(startX, chipX));
+                    chip.BeginAnimation(Canvas.TopProperty,
+                        BuildInsertKeyframes(startY, chipY));
+                }
 
                 var scale = (ScaleTransform)chip.RenderTransform;
                 scale.BeginAnimation(ScaleTransform.ScaleXProperty, BuildScaleKeyframes());
@@ -478,6 +507,26 @@ namespace Choose_students
                 targetY + 3, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(200))));
             kf.KeyFrames.Add(new DiscreteDoubleKeyFrame(
                 targetY, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(300))));
+            return kf;
+        }
+
+        private static DoubleAnimationUsingKeyFrames BuildInsertKeyframes(
+            double from, double to)
+        {
+            var kf = new DoubleAnimationUsingKeyFrames
+            {
+                Duration = TimeSpan.FromMilliseconds(300)
+            };
+            kf.KeyFrames.Add(new DiscreteDoubleKeyFrame(
+                from, KeyTime.FromTimeSpan(TimeSpan.Zero)));
+            kf.KeyFrames.Add(new DiscreteDoubleKeyFrame(
+                from + (to - from) * 0.35,
+                KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(100))));
+            kf.KeyFrames.Add(new DiscreteDoubleKeyFrame(
+                from + (to - from) * 0.72,
+                KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(200))));
+            kf.KeyFrames.Add(new DiscreteDoubleKeyFrame(
+                to, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(300))));
             return kf;
         }
 
