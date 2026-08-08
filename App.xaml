@@ -18,6 +18,7 @@
         <SolidColorBrush x:Key="AccentLightBrush" Color="#F27A52"/>
         <SolidColorBrush x:Key="AmberBrush" Color="#E8A33D"/>
         <SolidColorBrush x:Key="GreenBrush" Color="#6FA86B"/>
+        <SolidColorBrush x:Key="DeepGreenBrush" Color="#2E8B57"/>
 
         <!-- 嵌入的开源像素中文字体（SIL OFL 1.1，见 Fonts/OFL.txt） -->
         <FontFamily x:Key="PixelFont">pack://application:,,,/Fonts/FusionPixel12.ttf#Fusion Pixel 12px Prop zh_hans</FontFamily>
