@@ -6,54 +6,55 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
-using System.Windows.Media.Effects;
-using System.Windows.Shapes;
 using System.ComponentModel;
+
 namespace Choose_students
 {
     public partial class MainWindow : Window
     {
-        // ===== 学生名单 =====
-        // 演示用测试名单（发布时替换为实际学生姓名）
         private readonly List<string> _students = new List<string>
         {
-            "张小萌","李小宇","王小乐","赵小文",
-            "孙小艺","周小博","吴小雅","郑小奇"
+            "同学01","同学02","同学03","同学04","同学05","同学06","同学07","同学08",
+            "同学09","同学10","同学11","同学12","同学13","同学14","同学15","同学16",
+            "同学17","同学18","同学19","同学20","同学21","同学22","同学23","同学24",
+            "同学25","同学26","同学27","同学28","同学29","同学30","同学31","同学32"
         };
         private readonly Random _rnd = new Random();
         private System.Windows.Forms.NotifyIcon _notifyIcon;
         private int _pickCount = 1;
-        private List<string> _pendingResults;   // 等待动画展示的结果
-        private bool _animating = false;         // 是否正在播放动画
-        private bool _skipped = false;           // 是否已跳过
 
-        // 用于追踪和清理定时器，防止内存泄漏
-        private List<System.Windows.Threading.DispatcherTimer> _activeTimers = new List<System.Windows.Threading.DispatcherTimer>();
+        // 洗牌袋（伪随机）：一轮内每人最多被抽中一次，抽完重新洗牌
+        private readonly List<int> _bag = new List<int>();
+        private int _bagCursor;
+        private int _lastPicked = -1;
 
-        // 原神稀有度颜色（抽人时随机分配让画面丰富）
-        private static readonly Color[] StarColors = {
-            Color.FromRgb(0xF5, 0xD6, 0x7A),   // 金色 (5星)
-            Color.FromRgb(0xAA, 0x88, 0xFF),   // 紫色 (4星)
-            Color.FromRgb(0x6A, 0xC4, 0xFF),   // 蓝色 (3星)
-        };
+        private List<string> _pendingResults;
+        private bool _animating = false;
+        private bool _skipped = false;
 
-        // === 性能优化：缓存常用资源，避免重复创建 ===
-        // 缓存的 Brush，避免每次 new SolidColorBrush
-        private readonly Dictionary<int, SolidColorBrush> _colorBrushes = new Dictionary<int, SolidColorBrush>();
-        // 缓存的 DropShadowEffect，避免每次 new Effect（GPU 资源较重）
-        private readonly Dictionary<int, DropShadowEffect> _shadowEffects = new Dictionary<int, DropShadowEffect>();
-        // UI 对象池：回收用过的卡片，避免频繁 GC
+        private List<System.Windows.Threading.DispatcherTimer> _activeTimers =
+            new List<System.Windows.Threading.DispatcherTimer>();
+
+        // 像素风色板缓存
+        private SolidColorBrush _cardFillBrush;
+        private SolidColorBrush _cardBorderBrush;
+        private SolidColorBrush _innerBevelBrush;
+        private SolidColorBrush _inkBrush;
+        private FontFamily _pixelFont;
+
+        // 无障碍：跟随系统“关闭动画效果”
+        private bool _reducedMotion;
+
+        // 对象池
         private readonly Queue<Border> _cardPool = new Queue<Border>();
-        // 缓存的动画参数，避免重复创建动画对象
-        private readonly DoubleAnimation _fadeAnim;
-        private readonly DoubleAnimation _scaleXAnim;
-        private readonly DoubleAnimation _scaleYAnim;
-        private readonly DoubleAnimation _moveAnim;
 
-        // 缓存的Storyboard引用，避免每次FindResource
-        private Storyboard _fadeInStoryboard;
-        private Storyboard _beamStoryboard;
-        private Storyboard _flashStoryboard;
+        // 快速淡入（无障碍模式）
+        private readonly DoubleAnimation _quickFade;
+
+        // Storyboard 引用
+        private Storyboard _overlayIn;
+        private Storyboard _overlayOut;
+        private Storyboard _pulse;
 
         public MainWindow()
         {
@@ -61,69 +62,58 @@ namespace Choose_students
             UpdateCountLabel();
             TotalHint.Text = $"共 {_students.Count} 人可抽";
 
-            // === 预初始化缓存资源 ===
-            // 1. 预加载颜色笔刷
-            for (int i = 0; i < StarColors.Length; i++)
+            ApplyAccessibilitySettings();
+            BuildPixelBrushes();
+            _pixelFont = (FontFamily)FindResource("PixelFont");
+
+            _quickFade = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(180))
             {
-                var c = StarColors[i];
-                _colorBrushes[i] = new SolidColorBrush(c);
-                _colorBrushes[i].Freeze(); // 冻结，提升渲染性能
-
-                // 2. 预加载阴影效果（这玩意很耗 GPU，复用实例）
-                var effect = new DropShadowEffect
-                {
-                    Color = c,
-                    BlurRadius = 28,
-                    ShadowDepth = 0,
-                    Opacity = 0.7
-                };
-                effect.Freeze();
-                _shadowEffects[i] = effect;
-            }
-
-            // 3. 预加载动画模板，避免每次抽卡都 new 一堆动画
-            var dur = TimeSpan.FromMilliseconds(380);
-            var easeOut = new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.3 };
-            var easeLinear = new CubicEase { EasingMode = EasingMode.EaseOut };
-
-            _fadeAnim = new DoubleAnimation(0, 1, dur) { EasingFunction = easeLinear };
-            _fadeAnim.Freeze();
-            _scaleXAnim = new DoubleAnimation(0.6, 1.0, dur) { EasingFunction = easeOut };
-            _scaleXAnim.Freeze();
-            _scaleYAnim = new DoubleAnimation(0.6, 1.0, dur) { EasingFunction = easeOut };
-            _scaleYAnim.Freeze();
-            _moveAnim = new DoubleAnimation(40, 0, dur) { EasingFunction = easeOut };
-            _moveAnim.Freeze();
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+            };
+            _quickFade.Freeze();
 
             InitNotifyIcon();
 
-            // 预加载Storyboard并绑定事件（只绑定一次！）
-            _fadeInStoryboard = (Storyboard)FindResource("GenshinOverlayIn");
-            _beamStoryboard = (Storyboard)FindResource("LightBeamAnim");
-            _flashStoryboard = (Storyboard)FindResource("WhiteFlash");
+            // 缓存 Storyboard
+            _overlayIn = (Storyboard)FindResource("OceanOverlayIn");
+            _overlayOut = (Storyboard)FindResource("OceanOverlayOut");
+            _pulse = (Storyboard)FindResource("SoftPulse");
 
-            _fadeInStoryboard.Completed += FadeIn_Completed;
-            _beamStoryboard.Completed += Beam_Completed;
-            _flashStoryboard.Completed += Flash_Completed;
+            _overlayIn.Completed += OverlayIn_Completed;
+            _overlayOut.Completed += OceanOverlayOut_Completed;
+            _pulse.Completed += Pulse_Completed;
 
             Loaded += MainWindow_Loaded;
         }
 
-        private void FadeIn_Completed(object sender, EventArgs e)
+        // ===== 无障碍 =====
+        private void ApplyAccessibilitySettings()
         {
-            if (!_skipped) PlayLightBeamInternal();
+            // 跟随 Windows“关闭动画效果”设置
+            _reducedMotion = !SystemParameters.ClientAreaAnimation;
         }
 
-        private void Beam_Completed(object sender, EventArgs e)
+        private void BuildPixelBrushes()
         {
-            if (!_skipped) StartShowingCards(0);
+            _cardFillBrush = new SolidColorBrush(Color.FromRgb(0xFF, 0xF7, 0xE8));
+            _cardFillBrush.Freeze();
+            _cardBorderBrush = new SolidColorBrush(Color.FromRgb(0x4A, 0x38, 0x27));
+            _cardBorderBrush.Freeze();
+            _innerBevelBrush = new SolidColorBrush(Color.FromRgb(0xFF, 0xF9, 0xEC));
+            _innerBevelBrush.Freeze();
+            _inkBrush = new SolidColorBrush(Color.FromRgb(0x3B, 0x2E, 0x23));
+            _inkBrush.Freeze();
         }
 
-        private void Flash_Completed(object sender, EventArgs e)
+        private void OverlayIn_Completed(object sender, EventArgs e)
+        {
+            if (!_skipped) StartReveal(0);
+        }
+
+        private void Pulse_Completed(object sender, EventArgs e)
         {
             if (!_skipped)
             {
-                // 停留1.2秒让用户看清结果
                 var holdTimer = CreateTimer(TimeSpan.FromMilliseconds(1200), () =>
                 {
                     FadeOutOverlay();
@@ -132,143 +122,126 @@ namespace Choose_students
             }
         }
 
-        // ===== 窗口加载后撒星星 =====
+        // ===== Window loaded =====
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            // 星星只生成一次！
-            GenerateStars();
+            if (!_reducedMotion) StartIdleAmbient();
         }
 
-        // ===== 生成背景星点 =====
-        private void GenerateStars()
+        // ===== 待机环境动画（强调条两档硬切换闪烁） =====
+        private System.Windows.Threading.DispatcherTimer _ambientTimer;
+        private bool _accentBlink;
+
+        private void StartIdleAmbient()
         {
-            // 如果已经生成过了，就不要再生成了
-            if (StarCanvas.Children.Count > 0) return;
+            if (_reducedMotion) return;
 
-            StarCanvas.Children.Clear();
-            double w = ActualWidth > 0 ? ActualWidth : 480;
-            double h = ActualHeight > 0 ? ActualHeight : 700;
-            int count = 80;
-            for (int i = 0; i < count; i++)
-            {
-                double size = _rnd.NextDouble() * 2.5 + 0.5;
-                double opacity = _rnd.NextDouble() * 0.7 + 0.15;
-                double x = _rnd.NextDouble() * w;
-                double y = _rnd.NextDouble() * h;
-                var star = new Ellipse
-                {
-                    Width = size,
-                    Height = size,
-                    Fill = Brushes.White, // 用系统缓存的笔刷
-                    Opacity = opacity
-                };
-                Canvas.SetLeft(star, x);
-                Canvas.SetTop(star, y);
-                StarCanvas.Children.Add(star);
-                // 给每颗星星加闪烁动画
-                var anim = new DoubleAnimation
-                {
-                    From = opacity,
-                    To = opacity * 0.2,
-                    Duration = TimeSpan.FromSeconds(1.2 + _rnd.NextDouble() * 2.5),
-                    AutoReverse = true,
-                    RepeatBehavior = RepeatBehavior.Forever,
-                    BeginTime = TimeSpan.FromSeconds(_rnd.NextDouble() * 3)
-                };
-                star.BeginAnimation(UIElement.OpacityProperty, anim);
-            }
+            AccentBar.Opacity = 1;
+            _accentBlink = false;
+            _ambientTimer = new System.Windows.Threading.DispatcherTimer(
+                TimeSpan.FromMilliseconds(280),
+                System.Windows.Threading.DispatcherPriority.Render,
+                (s, e) => TickAmbient(),
+                Dispatcher);
+            _ambientTimer.Start();
         }
 
-        // 辅助方法：创建并追踪定时器
+        private void TickAmbient()
+        {
+            _accentBlink = !_accentBlink;
+            AccentBar.Opacity = _accentBlink ? 1.0 : 0.55;
+        }
+
+        private void StopIdleAmbient()
+        {
+            _ambientTimer?.Stop();
+            AccentBar.Opacity = 1;
+        }
+
+        // Timer helper
         private System.Windows.Threading.DispatcherTimer CreateTimer(TimeSpan interval, Action callback)
         {
-            var timer = new System.Windows.Threading.DispatcherTimer
-            {
-                Interval = interval
-            };
+            var timer = new System.Windows.Threading.DispatcherTimer { Interval = interval };
             timer.Tick += (s, _) =>
             {
                 timer.Stop();
-                _activeTimers.Remove(timer); // 执行完移除追踪
+                _activeTimers.Remove(timer);
                 callback?.Invoke();
             };
             _activeTimers.Add(timer);
             return timer;
         }
 
-        // 清理所有活动的定时器
         private void ClearAllTimers()
         {
-            foreach (var timer in _activeTimers)
-            {
-                timer.Stop();
-            }
+            foreach (var t in _activeTimers) t.Stop();
             _activeTimers.Clear();
         }
 
-        // === 性能优化：高效随机抽取 ===
-        // 原来的 OrderBy(_ => rnd.Next()) 是 O(n log n) 排序，且有轻微偏差
-        // 现在使用 O(n) 无偏采样，直接抽取不重复的索引
+        // ===== Pseudo-random pick（洗牌袋） =====
+        private void RebuildBag()
+        {
+            _bag.Clear();
+            for (int i = 0; i < _students.Count; i++) _bag.Add(i);
+
+            // Fisher-Yates 洗牌
+            for (int i = _bag.Count - 1; i > 0; i--)
+            {
+                int j = _rnd.Next(i + 1);
+                int tmp = _bag[i];
+                _bag[i] = _bag[j];
+                _bag[j] = tmp;
+            }
+            _bagCursor = 0;
+
+            // 避免换轮时与上一轮最后一个人紧邻重复
+            if (_lastPicked >= 0 && _bag.Count > 1 && _bag[0] == _lastPicked)
+            {
+                int j = _rnd.Next(1, _bag.Count);
+                int tmp = _bag[0];
+                _bag[0] = _bag[j];
+                _bag[j] = tmp;
+            }
+        }
+
         private List<string> RandomPick(int count)
         {
             if (count >= _students.Count) return _students.ToList();
 
             var result = new List<string>(count);
-            var picked = new HashSet<int>();
-
             while (result.Count < count)
             {
-                int idx = _rnd.Next(_students.Count);
-                if (picked.Add(idx)) // 保证不重复
-                {
-                    result.Add(_students[idx]);
-                }
+                // 剩余不够一次抽取时先重新洗牌，保证单次抽取内不重复
+                if (_bag.Count - _bagCursor < count - result.Count) RebuildBag();
+
+                int idx = _bag[_bagCursor++];
+                _lastPicked = idx;
+                result.Add(_students[idx]);
             }
             return result;
         }
 
-        // === 对象池：获取卡片 ===
+        // Object pool
         private Border GetCardFromPool()
         {
-            if (_cardPool.Count > 0)
-            {
-                // 池子里有回收的，直接复用
-                return _cardPool.Dequeue();
-            }
-            // 没有的话才新建
+            if (_cardPool.Count > 0) return _cardPool.Dequeue();
             return new Border();
         }
 
-        // === 对象池：回收卡片 ===
         private void RecycleCard(Border card)
         {
-            // 重置状态，放回池子
             card.Child = null;
             card.ClearValue(Border.BackgroundProperty);
             card.ClearValue(Border.BorderBrushProperty);
             card.ClearValue(Border.EffectProperty);
             card.ClearValue(UIElement.OpacityProperty);
             card.ClearValue(UIElement.RenderTransformProperty);
-
-            // 停止卡片上的所有动画
             card.BeginAnimation(UIElement.OpacityProperty, null);
-            if (card.RenderTransform is TransformGroup tg)
-            {
-                if (tg.Children[0] is ScaleTransform scale)
-                {
-                    scale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
-                    scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
-                }
-                if (tg.Children[1] is TranslateTransform trans)
-                {
-                    trans.BeginAnimation(TranslateTransform.YProperty, null);
-                }
-            }
-
+            card.BeginAnimation(Canvas.TopProperty, null);
             _cardPool.Enqueue(card);
         }
 
-        // ===== 标题栏拖动 =====
+        // ===== Title bar =====
         private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             if (e.ClickCount == 2) return;
@@ -277,9 +250,8 @@ namespace Choose_students
 
         private void BtnClose_Click(object sender, RoutedEventArgs e)
         {
-            _notifyIcon.Visible = false;
-            // 退出时清理对象池
-            _cardPool.Clear();
+            if (_notifyIcon != null)
+                _notifyIcon.Visible = false;
             Application.Current.Shutdown();
         }
 
@@ -288,7 +260,7 @@ namespace Choose_students
             WindowState = WindowState.Minimized;
         }
 
-        // ===== 步进器 =====
+        // ===== Stepper =====
         private void BtnMinus_Click(object sender, RoutedEventArgs e)
         {
             if (_pickCount > 1) { _pickCount--; UpdateCountLabel(); }
@@ -304,9 +276,24 @@ namespace Choose_students
             CountLabel.Text = _pickCount.ToString();
             BtnMinus.IsEnabled = _pickCount > 1;
             BtnPlus.IsEnabled = _pickCount < _students.Count;
+
+            // 像素风：三档硬切弹跳
+            var scale = (ScaleTransform)CountLabel.RenderTransform;
+            var bounce = new DoubleAnimationUsingKeyFrames
+            {
+                Duration = TimeSpan.FromMilliseconds(240)
+            };
+            bounce.KeyFrames.Add(new DiscreteDoubleKeyFrame(
+                1.0, KeyTime.FromTimeSpan(TimeSpan.Zero)));
+            bounce.KeyFrames.Add(new DiscreteDoubleKeyFrame(
+                1.18, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(80))));
+            bounce.KeyFrames.Add(new DiscreteDoubleKeyFrame(
+                1.0, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(240))));
+            scale.BeginAnimation(ScaleTransform.ScaleXProperty, bounce);
+            scale.BeginAnimation(ScaleTransform.ScaleYProperty, bounce);
         }
 
-        // ===== 主按钮点击 =====
+        // ===== Main button =====
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             if (_animating) return;
@@ -316,238 +303,222 @@ namespace Choose_students
                 return;
             }
 
-            // === 优化：使用高效随机抽取 ===
             _pendingResults = RandomPick(_pickCount);
-
-            // 启动原神动画
-            StartGenshinAnimation();
+            StartOceanAnimation();
         }
 
-        // ===== 跳过层点击 =====
+        // ===== Skip =====
         private void SkipLayer_Click(object sender, MouseButtonEventArgs e)
         {
             if (!_animating) return;
             SkipAnimation();
         }
 
-        // =====================================================
-        //  原神抽卡动画主流程
-        // =====================================================
-        private void StartGenshinAnimation()
+        // ===== PIXEL REVEAL ANIMATION =====
+        private void StartOceanAnimation()
         {
             _animating = true;
             _skipped = false;
             BtnRun.IsEnabled = false;
-
-            // 清理上一次可能残留的定时器
             ClearAllTimers();
+            StopIdleAmbient();
 
-            // 回收上一次的卡片到对象池
-            foreach (var child in CardCanvas.Children)
-            {
-                if (child is Border b)
-                {
-                    RecycleCard(b);
-                }
-            }
-            CardCanvas.Children.Clear();
+            foreach (var child in NameCanvas.Children)
+                if (child is Border b) RecycleCard(b);
+            NameCanvas.Children.Clear();
 
-            // 显示跳过层
             SkipLayer.Visibility = Visibility.Visible;
-            GenshinOverlay.IsHitTestVisible = true;
+            // 点击层位于遮罩之上（ZIndex 200），遮罩本身不拦截输入
+            OceanOverlay.IsHitTestVisible = false;
 
-            // 播放遮罩淡入
-            _fadeInStoryboard.Begin();
+            // Start breathing square
+            if (!_reducedMotion)
+            {
+                var breathRing = (Storyboard)FindResource("BreathRingAnim");
+                breathRing.Begin();
+            }
+
+            _overlayIn.Begin();
         }
 
-        // 1. 光柱扫过
-        private void PlayLightBeamInternal()
-        {
-            if (_skipped) return;
-            _beamStoryboard.Begin();
-        }
-
-        // 2. 逐个显示卡片
-        private void StartShowingCards(int index)
+        private void StartReveal(int index)
         {
             if (_skipped) return;
             if (index >= _pendingResults.Count)
             {
-                // 所有卡片出完 → 白闪 → 收尾
-                PlayWhiteFlashAndEnd();
+                PlayPulseAndEnd();
                 return;
             }
-            ShowOneCard(index, () => StartShowingCards(index + 1));
+            ShowOneName(index, () => StartReveal(index + 1));
         }
 
-        private void ShowOneCard(int index, Action onComplete)
+        private void ShowOneName(int index, Action onComplete)
         {
             if (_skipped) return;
-            double canvasW = ActualWidth > 0 ? ActualWidth : 480;
-            double canvasH = ActualHeight > 0 ? ActualHeight : 700;
+            double canvasW = NameCanvas.ActualWidth > 0
+                ? NameCanvas.ActualWidth
+                : ActualWidth - 32;
+            double canvasH = NameCanvas.ActualHeight > 0
+                ? NameCanvas.ActualHeight
+                : ActualHeight - 32;
             string name = _pendingResults[index];
-            int colorIndex = _rnd.Next(StarColors.Length);
-            Color color = StarColors[colorIndex];
+            int total = _pendingResults.Count;
 
-            // === 从对象池拿卡片 ===
-            var card = GetCardFromPool();
-            card.Width = 300;
-            card.Height = 160;
-            card.CornerRadius = new CornerRadius(16);
-            card.Opacity = 0;
-            card.RenderTransformOrigin = new Point(0.5, 0.5);
+            // 自适应字号：人数越多，卡片越小
+            double fontSize;
+            if (total <= 5)       { fontSize = 46; }
+            else if (total <= 10) { fontSize = 34; }
+            else if (total <= 18) { fontSize = 26; }
+            else                  { fontSize = 21; }
 
-            // === 使用缓存的笔刷和效果 ===
-            // 渐变背景
-            var grad = new LinearGradientBrush
-            {
-                StartPoint = new Point(0, 0),
-                EndPoint = new Point(1, 1)
-            };
-            var darkColor = Color.Multiply(color, 0.25f);
-            darkColor.A = 255;
-            grad.GradientStops.Add(new GradientStop(Color.FromArgb(230, darkColor.R, darkColor.G, darkColor.B), 0));
-            grad.GradientStops.Add(new GradientStop(Color.FromArgb(200, 15, 15, 40), 1));
-            grad.Freeze();
-            card.Background = grad;
-
-            // 发光边框
-            card.BorderThickness = new Thickness(1.5);
-            card.BorderBrush = _colorBrushes[colorIndex]; // 缓存的笔刷
-
-            // 外发光
-            card.Effect = _shadowEffects[colorIndex]; // 缓存的Effect！
-
-            // ---- 卡片内容 ----
-            var inner = new Grid();
-            // 背景纹理圆圈（装饰）
-            var deco = new Ellipse
-            {
-                Width = 200,
-                Height = 200,
-                Opacity = 0.06,
-                HorizontalAlignment = HorizontalAlignment.Right,
-                VerticalAlignment = VerticalAlignment.Center,
-                Margin = new Thickness(0, 0, -40, 0),
-                Fill = _colorBrushes[colorIndex] // 缓存的笔刷
-            };
-            inner.Children.Add(deco);
-
-            // 星星图标
-            int starCount = index == 0 ? 5 : (colorIndex == 1 ? 4 : 3);
-            var starRow = new StackPanel
-            {
-                Orientation = Orientation.Horizontal,
-                HorizontalAlignment = HorizontalAlignment.Left,
-                VerticalAlignment = VerticalAlignment.Top,
-                Margin = new Thickness(20, 16, 0, 0)
-            };
-            for (int s = 0; s < starCount; s++)
-            {
-                starRow.Children.Add(new TextBlock
-                {
-                    Text = "★",
-                    FontSize = 14,
-                    Foreground = _colorBrushes[colorIndex], // 缓存的笔刷
-                    Margin = new Thickness(0, 0, 2, 0)
-                });
-            }
-            inner.Children.Add(starRow);
-
-            // 名字
-            var nameBlock = new TextBlock
+            var text = new TextBlock
             {
                 Text = name,
-                FontFamily = new FontFamily("Microsoft YaHei, Segoe UI"),
-                FontSize = 44,
-                FontWeight = FontWeights.Bold,
-                Foreground = Brushes.White, // 系统缓存
+                FontFamily = _pixelFont,
+                FontSize = fontSize,
+                Foreground = _inkBrush,
+                TextAlignment = TextAlignment.Center,
                 HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center,
-                // 名字的阴影，这里也可以缓存，但因为只有一个，影响不大
-                Effect = new DropShadowEffect
-                {
-                    Color = color,
-                    BlurRadius = 12,
-                    ShadowDepth = 0,
-                    Opacity = 0.9
-                }
+                VerticalAlignment = VerticalAlignment.Center
             };
-            inner.Children.Add(nameBlock);
 
-            // 底部序号
-            var indexBlock = new TextBlock
+            text.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            double textW = text.DesiredSize.Width;
+            double textH = text.DesiredSize.Height;
+
+            // 直角像素卡：深色外框 + 高光内框
+            double chipW = Math.Min(textW + 48, canvasW - 60);
+            double chipH = textH + 24;
+
+            var chip = GetCardFromPool();
+            chip.Width = chipW;
+            chip.Height = chipH;
+            chip.Background = _cardFillBrush;
+            chip.BorderBrush = _cardBorderBrush;
+            chip.BorderThickness = new Thickness(3);
+            chip.CornerRadius = new CornerRadius(0);
+            chip.Opacity = 0;
+            chip.RenderTransformOrigin = new Point(0.5, 0.5);
+            chip.RenderTransform = new ScaleTransform(0.8, 0.8);
+            chip.Child = new Border
             {
-                Text = $"No.{index + 1}",
-                FontFamily = new FontFamily("Segoe UI, Microsoft YaHei"),
-                FontSize = 12,
-                Foreground = Brushes.White, // 系统缓存
-                Opacity = 0.55,
-                HorizontalAlignment = HorizontalAlignment.Right,
-                VerticalAlignment = VerticalAlignment.Bottom,
-                Margin = new Thickness(0, 0, 16, 12)
+                BorderBrush = _innerBevelBrush,
+                BorderThickness = new Thickness(1),
+                Margin = new Thickness(3),
+                Child = text
             };
-            inner.Children.Add(indexBlock);
 
-            card.Child = inner;
-
-            // ---- 布局位置 ----
-            double cardX = (canvasW - 300) / 2.0;
-            double cardY = (canvasH - 160) / 2.0 - 30;
-            if (_pendingResults.Count > 1)
+            // 扑克牌叠放：以中心为基准呈扇形偏移，后一张压前一张（ZIndex 递增）
+            double centerX = (canvasW - chipW) / 2.0;
+            double centerY = canvasH / 2.0 - chipH / 2.0 - 14;
+            double chipX = centerX;
+            double chipY = centerY;
+            if (total > 1)
             {
-                double spread = Math.Min(80.0, 320.0 / _pendingResults.Count);
-                cardX = (canvasW - 300) / 2.0 + (index - (_pendingResults.Count - 1) / 2.0) * spread;
-                cardY = canvasH / 2.0 - 80 - Math.Abs(index - (_pendingResults.Count - 1) / 2.0) * 12;
+                double roomX = Math.Max(0, canvasW - chipW - 30);
+                double roomY = Math.Max(0, canvasH - chipH - 24);
+                double stepX = Math.Min(30, Math.Max(8, roomX / (total - 1)));
+                double stepY = Math.Min(18, Math.Max(5, roomY / (total - 1)));
+                double off = index - (total - 1) / 2.0;
+                chipX = centerX + off * stepX;
+                chipY = centerY - off * stepY;
             }
-            Canvas.SetLeft(card, cardX);
-            Canvas.SetTop(card, cardY);
 
-            var tg = new TransformGroup
+            Canvas.SetLeft(chip, chipX);
+            Canvas.SetZIndex(chip, index);
+            NameCanvas.Children.Add(chip);
+
+            if (_reducedMotion)
             {
-                Children = new TransformCollection
-                {
-                    new ScaleTransform(0.6, 0.6),
-                    new TranslateTransform(0, 40)
-                }
-            };
-            card.RenderTransform = tg;
+                Canvas.SetTop(chip, chipY);
+                chip.BeginAnimation(UIElement.OpacityProperty, _quickFade);
+            }
+            else
+            {
+                // 三档硬切步进：从牌堆位置弹出，跳两下后落定
+                Canvas.SetTop(chip, chipY + 40);
+                chip.BeginAnimation(UIElement.OpacityProperty, BuildFadeKeyframes());
+                chip.BeginAnimation(Canvas.TopProperty, BuildMoveKeyframes(chipY));
 
-            CardCanvas.Children.Add(card);
+                var scale = (ScaleTransform)chip.RenderTransform;
+                scale.BeginAnimation(ScaleTransform.ScaleXProperty, BuildScaleKeyframes());
+                scale.BeginAnimation(ScaleTransform.ScaleYProperty, BuildScaleKeyframes());
+            }
 
-            // === 使用缓存的动画 ===
-            // 透明度
-            card.BeginAnimation(UIElement.OpacityProperty, _fadeAnim);
-            // 缩放
-            var scale = (ScaleTransform)tg.Children[0];
-            var trans = (TranslateTransform)tg.Children[1];
-            scale.BeginAnimation(ScaleTransform.ScaleXProperty, _scaleXAnim);
-            scale.BeginAnimation(ScaleTransform.ScaleYProperty, _scaleYAnim);
-            // 上移
-            trans.BeginAnimation(TranslateTransform.YProperty, _moveAnim);
-
-            // 间隔后出下一张
-            double interval = _pendingResults.Count == 1 ? 600 : 450;
+            double interval = total == 1 ? 520 : 360;
             var timer = CreateTimer(TimeSpan.FromMilliseconds(interval), onComplete);
             timer.Start();
         }
 
-        // 3. 白闪 + 结束
-        private void PlayWhiteFlashAndEnd()
+        // ===== 像素硬切动画辅助 =====
+        private static DoubleAnimationUsingKeyFrames BuildFadeKeyframes()
+        {
+            var kf = new DoubleAnimationUsingKeyFrames
+            {
+                Duration = TimeSpan.FromMilliseconds(260)
+            };
+            kf.KeyFrames.Add(new DiscreteDoubleKeyFrame(
+                0, KeyTime.FromTimeSpan(TimeSpan.Zero)));
+            kf.KeyFrames.Add(new DiscreteDoubleKeyFrame(
+                1, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(70))));
+            return kf;
+        }
+
+        private static DoubleAnimationUsingKeyFrames BuildMoveKeyframes(double targetY)
+        {
+            var kf = new DoubleAnimationUsingKeyFrames
+            {
+                Duration = TimeSpan.FromMilliseconds(300)
+            };
+            kf.KeyFrames.Add(new DiscreteDoubleKeyFrame(
+                targetY + 40, KeyTime.FromTimeSpan(TimeSpan.Zero)));
+            kf.KeyFrames.Add(new DiscreteDoubleKeyFrame(
+                targetY + 12, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(100))));
+            kf.KeyFrames.Add(new DiscreteDoubleKeyFrame(
+                targetY + 3, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(200))));
+            kf.KeyFrames.Add(new DiscreteDoubleKeyFrame(
+                targetY, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(300))));
+            return kf;
+        }
+
+        private static DoubleAnimationUsingKeyFrames BuildScaleKeyframes()
+        {
+            var kf = new DoubleAnimationUsingKeyFrames
+            {
+                Duration = TimeSpan.FromMilliseconds(300)
+            };
+            kf.KeyFrames.Add(new DiscreteDoubleKeyFrame(
+                0.7, KeyTime.FromTimeSpan(TimeSpan.Zero)));
+            kf.KeyFrames.Add(new DiscreteDoubleKeyFrame(
+                1.04, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(150))));
+            kf.KeyFrames.Add(new DiscreteDoubleKeyFrame(
+                1.0, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(300))));
+            return kf;
+        }
+
+        private void PlayPulseAndEnd()
         {
             if (_skipped) return;
-            FlashOverlay.Opacity = 0.9;
-            _flashStoryboard.Begin();
+
+            if (_reducedMotion)
+            {
+                var holdTimer = CreateTimer(TimeSpan.FromMilliseconds(500), FadeOutOverlay);
+                holdTimer.Start();
+                return;
+            }
+
+            PulseRing.Opacity = 0.9;
+            PulseRingScale.ScaleX = 0.6;
+            PulseRingScale.ScaleY = 0.6;
+            _pulse.Begin();
         }
 
         private void FadeOutOverlay()
         {
-            var fadeOut = (Storyboard)FindResource("GenshinOverlayOut");
-            fadeOut.Begin();
+            _overlayOut.Begin();
         }
 
-        // 动画结束 → 更新结果卡片
-        private void GenshinOverlayOut_Completed(object sender, EventArgs e)
+        private void OceanOverlayOut_Completed(object sender, EventArgs e)
         {
             FinishAnimation();
         }
@@ -556,74 +527,62 @@ namespace Choose_students
         {
             _animating = false;
             _skipped = false;
-            GenshinOverlay.Opacity = 0;
-            GenshinOverlay.IsHitTestVisible = false;
+            OceanOverlay.Opacity = 0;
+            OceanOverlay.IsHitTestVisible = false;
             SkipLayer.Visibility = Visibility.Collapsed;
 
-            // 回收卡片到对象池，而不是直接丢弃
-            foreach (var child in CardCanvas.Children)
-            {
-                if (child is Border b)
-                {
-                    RecycleCard(b);
-                }
-            }
-            CardCanvas.Children.Clear();
+            foreach (var child in NameCanvas.Children)
+                if (child is Border b) RecycleCard(b);
+            NameCanvas.Children.Clear();
 
-            // 重置光柱位置
-            LightBeamTranslate.X = -600;
-            LightBeam.Opacity = 0;
-            FlashOverlay.Opacity = 0;
+            PulseRing.Opacity = 0;
+            BreathRing.Opacity = 0;
+            ((Storyboard)FindResource("BreathRingAnim")).Stop();
 
-            // 更新结果区
             var lines = new List<string>();
             for (int i = 0; i < _pendingResults.Count; i += 3)
                 lines.Add(string.Join("　", _pendingResults.Skip(i).Take(3)));
             SetResult(string.Join("\n", lines));
 
             BtnRun.IsEnabled = true;
+            StartIdleAmbient();
         }
 
-        // ===== 跳过动画 =====
+        // ===== Skip =====
         private void SkipAnimation()
         {
             _skipped = true;
-
-            // 停止所有正在播放的 Storyboard
-            _fadeInStoryboard.Stop();
-            _beamStoryboard.Stop();
-            _flashStoryboard.Stop();
-            ((Storyboard)FindResource("GenshinOverlayOut")).Stop();
-
-            // 清理所有定时器
+            _overlayIn.Stop();
+            _overlayOut.Stop();
+            _pulse.Stop();
+            ((Storyboard)FindResource("BreathRingAnim")).Stop();
             ClearAllTimers();
-
             FinishAnimation();
         }
 
-        // ===== 更新结果区（带淡入动画） =====
+        // ===== Set result =====
         private void SetResult(string text)
         {
             txtBadLuck.Text = text;
+
+            if (_reducedMotion)
+            {
+                ResultCard.BeginAnimation(UIElement.OpacityProperty, _quickFade);
+                return;
+            }
+
             var fadeIn = (Storyboard)FindResource("FadeInResult");
             fadeIn.Begin();
         }
 
-        private void Window_StateChanged(object sender, EventArgs e)
-        {
-            // 什么都不做，避免重建星星
-        }
+        private void Window_StateChanged(object sender, EventArgs e) { }
 
         private void Window_Closing(object sender, CancelEventArgs e)
         {
-            // 退出时清理所有定时器
             ClearAllTimers();
-            _notifyIcon.Dispose();
+            _notifyIcon?.Dispose();
         }
 
-        private void InitNotifyIcon()
-        {
-            // 托盘图标初始化
-        }
+        private void InitNotifyIcon() { }
     }
 }

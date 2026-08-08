@@ -147,13 +147,13 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Lina圆体艺术签名生成 %281%29.png" />
-  </ItemGroup>
-  <ItemGroup>
     <Resource Include="优化界面.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Fonts\FusionPixel12.ttf" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Fonts\OFL.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

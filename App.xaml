@@ -1,9 +1,26 @@
-﻿<Application x:Class="Choose_students.App"
+<Application x:Class="Choose_students.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:Choose_students"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-         
+
+        <!-- ===== 像素风调色板（暖色纸面 + 深色像素边框） ===== -->
+        <SolidColorBrush x:Key="PaperBackdrop" Color="#F2E6CD"/>
+        <SolidColorBrush x:Key="PaperTextureA" Color="#EFE2C6"/>
+        <SolidColorBrush x:Key="PanelFill" Color="#E3D3B2"/>
+        <SolidColorBrush x:Key="CardFill" Color="#FFF7E8"/>
+        <SolidColorBrush x:Key="BorderDark" Color="#4A3827"/>
+        <SolidColorBrush x:Key="BorderLight" Color="#FFF9EC"/>
+        <SolidColorBrush x:Key="InkBrush" Color="#3B2E23"/>
+        <SolidColorBrush x:Key="InkMutedBrush" Color="#8A7A63"/>
+        <SolidColorBrush x:Key="AccentBrush" Color="#D94F30"/>
+        <SolidColorBrush x:Key="AccentDarkBrush" Color="#7A2E1C"/>
+        <SolidColorBrush x:Key="AccentLightBrush" Color="#F27A52"/>
+        <SolidColorBrush x:Key="AmberBrush" Color="#E8A33D"/>
+        <SolidColorBrush x:Key="GreenBrush" Color="#6FA86B"/>
+
+        <!-- 嵌入的开源像素中文字体（SIL OFL 1.1，见 Fonts/OFL.txt） -->
+        <FontFamily x:Key="PixelFont">pack://application:,,,/Fonts/FusionPixel12.ttf#Fusion Pixel 12px Prop zh_hans</FontFamily>
+
     </Application.Resources>
 </Application>

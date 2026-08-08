@@ -1,7 +1,7 @@
 # 🎲 Bad Luck Picker — 课堂随机抽取器
 
-> 一款 **Apple 风格 × 原神抽卡动画** 的 WPF 桌面课堂点名工具。  
-> 公平无重复随机抽取，搭配惊艳视觉动效，让课堂互动充满仪式感。
+> 一款 **像素风（8-bit 纸面桌游）** 的 WPF 桌面课堂点名工具。  
+> 公平无重复随机抽取，搭配硬边像素动效，让课堂互动充满仪式感。
 
 [![.NET Framework](https://img.shields.io/badge/.NET%20Framework-4.7.2-512BD4?logo=dotnet)](https://dotnet.microsoft.com/download/dotnet-framework/net472)
 [![Platform](https://img.shields.io/badge/platform-Windows-blue?logo=windows)](https://www.microsoft.com/windows)
@@ -14,12 +14,12 @@
 
 | 特性 | 说明 |
 |---------|-------------|
-| 🎯 **随机抽取** | 公平无重复随机算法（HashSet O(n) 无偏采样） |
+| 🎯 **随机抽取** | 洗牌式伪随机（Fisher-Yates 洗牌袋）：一轮内每人最多被抽中一次，抽完自动重洗，跨轮避免紧邻重复 |
 | 🔢 **人数可调** | Stepper 控件支持 1~N 人，每行展示 3 个结果 |
-| 🪟 **无边框窗口** | 自定义圆角窗口 + macOS 风格红绿灯标题栏 |
-| ✨ **原神抽卡动画** | 深空星空叠加 → 金光扫过 → 卡牌依次弹出（缩放+光晕）→ 全屏白光炸裂收尾 |
+| 🪟 **无边框窗口** | 方角像素窗框 + 偏移实心硬阴影 + 像素方块标题栏按钮 |
+| 🎴 **扑克牌点名动画** | 纸面遮罩 → 名字像素卡一张张叠放（后卡压前卡）→ 暖红闪光收尾 |
 | ⏭️ **跳过动画** | 动画期间点击任意位置即可直接跳到结果 |
-| 📋 **结果动画** | 结果卡牌淡入 + 弹性上滑动画 |
+| 📋 **结果动画** | 像素结果卡硬切淡入 + 高光内框 |
 | 🔔 **系统托盘** | 最小化到托盘，常驻后台 |
 | ⚡ **性能优化** | 卡牌对象池复用、画刷/阴影/动画预缓存冻结、Storyboard 复用 |
 
@@ -29,13 +29,13 @@
 
 ```
 ┌──────────────────────────────────┐
-│  ●  ●  ●   Bad Luck Picker      │  ← macOS 红绿灯 + 可拖拽标题栏
+│  ▣  ▣  ▣   Bad Luck Picker      │  ← 像素方块按钮 + 可拖拽标题栏
 ├──────────────────────────────────┤
 │                                  │
 │  ┌────────────────────────────┐  │
-│  │ 🎲  本次抽取              │  │
+│  │ T H I S   R O U N D      │  │
 │  │                            │  │
-│  │     小明   小红   小华     │  │  ← 白色卡片结果区（淡入）
+│  │     小明   小红   小华     │  │  ← 像素卡片结果区
 │  │     小刚   小丽             │  │
 │  └────────────────────────────┘  │
 │                                  │
@@ -45,40 +45,35 @@
 │  └────────────────────────────┘  │
 │                                  │
 │  ┌────────────────────────────┐  │
-│  │       🎰  随机抽取         │  │  ← 蓝色操作按钮
+│  │       🎰  随机抽取         │  │  ← 暖红强调像素按钮
 │  └────────────────────────────┘  │
-│                       [艺术签名]  │
+│                          By Lina  │
 └──────────────────────────────────┘
 ```
 
 ---
 
-## 🎬 抽卡动画序列
+## 🎬 扑克牌点名动画序列
 
 ```
 点击"随机抽取"
     │
     ▼
 ┌──────────────┐
-│ 遮罩淡入      │  深蓝紫渐变底 + 80 颗闪烁星星
+│ 遮罩淡入      │  纸面像素遮罩 + 点阵纹理
 └──────┬───────┘
        ▼
 ┌──────────────┐
-│ 金光扫过      │  半透明金色光束从左 → 右扫过
+│ 名字浮现      │  像素卡三档硬切弹出
+│               │  后一张压前一张（ZIndex 递增）
 └──────┬───────┘
        ▼
 ┌──────────────┐
-│ 卡牌弹出      │  Scale(0.6→1.0) + 上滑 + 淡入
-│               │  发光边框 + 星级评价（★）
-│               │  多人时扇形展开布局
+│ 脉冲收尾      │  暖红像素方框闪光扩散 → 遮罩淡出
 └──────┬───────┘
        ▼
 ┌──────────────┐
-│ 白光炸裂      │  0.5s 全屏白光闪烁 → 遮罩淡出
-└──────┬───────┘
-       ▼
-┌──────────────┐
-│ 展示结果      │  结果卡牌淡入，Stepper 恢复
+│ 展示结果      │  结果卡牌硬切淡入，Stepper 恢复
 └──────────────┘
 ```
 
@@ -119,8 +114,10 @@ Bad-Luck-Picker/
 │   ├── AssemblyInfo.cs         # 程序集元数据
 │   ├── Resources.resx          # 资源文件
 │   └── Settings.settings       # 应用程序设置
-├── 优化界面.ico                # 应用图标
-├──     # 签名图片资源
+├── 优化界面.ico                # 像素风应用图标
+├── Fonts/
+│   ├── FusionPixel12.ttf       # 嵌入的开源像素中文字体（SIL OFL 1.1）
+│   └── OFL.txt                 # 字体许可证
 └── .gitignore
 ```
 
@@ -174,39 +171,41 @@ private readonly List<string> _students = new List<string>
 
 | 参数/资源 | 位置 | 说明 |
 |---------------------|----------|-------------|
-| 星星数量 | `MainWindow.xaml.cs:GenerateStars()` | 默认 80 |
-| 光束扫过速度 | `MainWindow.xaml` → `LightBeamAnim` Storyboard | 时长 `0:0:0.9` |
-| 结果淡入速度 | `MainWindow.xaml` → `FadeInResult` Storyboard | 时长 `0:0:0.4` |
+| 强调条闪烁 | `MainWindow.xaml.cs` → `TickAmbient()` | 两档明暗切换，周期 280ms |
+| 呼吸方框节奏 | `MainWindow.xaml` → `BreathRingAnim` Storyboard | 时长 `0:0:1.2` |
+| 结果淡入速度 | `MainWindow.xaml` → `FadeInResult` Storyboard | 时长 `0:0:0.16` |
 | 默认抽取人数 | `MainWindow.xaml.cs:_pickCount` | 默认 1 |
 
 ---
 
 ## 🎨 设计细节
 
-### Apple 风格 UI
+### 像素风设计（暖色纸面 + 硬边景深）
 
-- **无边框窗口**：`WindowStyle="None"` + `AllowsTransparency="True"` + `CornerRadius="20"`
-- **红绿灯**：红色(#FF5F57)关闭 / 黄色(#FEBC2E)最小化 / 绿色(#28C840)装饰
-- **配色方案**：`#007AFF` Apple 蓝 + `#F2F2F7` 浅灰 + `#1D1D1F` 深色文字
-- **Stepper**：圆形 ± 按钮，模仿 iOS Stepper 控件
+- **纸面背景**：奶油纸色 `#F2E6CD` + 8px 点阵纹理，控件底色比背景略深（面板 `#E3D3B2`、卡片 `#FFF7E8`）
+- **硬边景深**：所有圆角与模糊阴影改为直角、偏移实心硬阴影和 1–2px 明暗斜面边框
+- **无边框窗口**：`WindowStyle="None"` + `AllowsTransparency="True"` + 方角窗框 + 偏移硬阴影
+- **标题栏按钮**：红(#D94F30)关闭 / 琥珀(#E8A33D)最小化 / 绿(#6FA86B)装饰，均为方形像素块
+- **强调色**：主按钮使用暖红 `#D94F30` + 琥珀内框，成为界面最突出的层级
+- **字体**：嵌入开源 Fusion Pixel 12px 简体像素字体（SIL OFL 1.1），中文姓名保持像素观感
+- **无障碍**：跟随 Windows“关闭动画效果”设置，自动降级为直接展示结果
 
-### 原神抽卡动画
+### 扑克牌点名动画
 
-- **星空背景**：LinearGradientBrush 深蓝紫渐变 + 80 个 Ellipse 各自独立闪烁动画
-- **金光扫过**：透明 → 金色渐变 → 透明 Rectangle，SineEase 缓动扫过
-- **卡牌弹出**：BackEase 弹性缩放 + 上滑 + 淡入，DropShadowEffect 外发光
-- **星级评级**：首张卡 5★（金色），其余 4★（紫色）/ 3★（蓝色）随机稀有度
+- **遮罩**：纸面像素遮罩 + 点阵纹理，聚焦中心
+- **名字卡**：直角像素卡（3px 深色外框 + 高光内框），三档硬切弹出
+- **叠放**：以中心为基准呈扇形偏移，`Canvas.ZIndex` 递增，后一张压前一张
+- **收尾**：暖红像素方框闪光扩散后遮罩淡出
 
 ### 性能优化
 
 | 优化项 | 实现方式 |
 |-------------|----------------|
 | **对象池** | `Queue<Border> _cardPool` 回收卡牌 UI 元素 |
-| **画刷缓存** | `Dictionary<int, SolidColorBrush> _colorBrushes` 预创建 + `Freeze()` 冻结 |
-| **阴影缓存** | `Dictionary<int, DropShadowEffect> _shadowEffects` 复用，减少 GPU 开销 |
-| **动画缓存** | `_fadeAnim` / `_scaleXAnim` / `_scaleYAnim` / `_moveAnim` 预创建 + `Freeze()` 冻结 |
-| **Storyboard 复用** | `_fadeInStoryboard` / `_beamStoryboard` / `_flashStoryboard` 一次性事件绑定 |
-| **随机算法** | `HashSet` O(n) 无偏采样，替代 `OrderBy(Random)` 的 O(n log n) |
+| **画刷缓存** | `_cardFillBrush` / `_cardBorderBrush` / `_inkBrush` 等预创建 + `Freeze()` 冻结 |
+| **动画缓存** | `_quickFade` 预创建 + `Freeze()` 冻结，卡牌动画使用离散关键帧 |
+| **Storyboard 复用** | `_overlayIn` / `_overlayOut` / `_pulse` 一次性事件绑定 |
+| **随机算法** | Fisher-Yates 洗牌袋 O(n) 预洗牌，抽取 O(k) 顺序取，公平且不重复 |
 | **定时器管理** | `List<DispatcherTimer> _activeTimers` 统一管理，`ClearAllTimers()` 防泄漏 |
 
 ---
