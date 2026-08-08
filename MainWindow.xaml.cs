@@ -23,6 +23,9 @@ namespace Choose_students
         private System.Windows.Forms.NotifyIcon _notifyIcon;
         private int _pickCount = 1;
 
+        // 名字牌统一宽度按名单最长名字计算（当前 3 字），双字与三字牌大小一致
+        private readonly int _maxNameLen;
+
         // 洗牌袋（伪随机）：一轮内每人最多被抽中一次，抽完重新洗牌
         private readonly List<int> _bag = new List<int>();
         private int _bagCursor;
@@ -62,6 +65,9 @@ namespace Choose_students
         public MainWindow()
         {
             InitializeComponent();
+            _maxNameLen = _students.Count == 0
+                ? 3
+                : _students.Max(s => s.Length);
             UpdateCountLabel();
             TotalHint.Text = $"共 {_students.Count} 人可抽";
 
@@ -394,8 +400,9 @@ namespace Choose_students
             double textW = text.DesiredSize.Width;
             double textH = text.DesiredSize.Height;
 
-            // 所有牌同尺寸：直角像素卡（深色外框 + 高光内框）
-            double chipW = Math.Min(textW + 56, canvasW - 56);
+            // 所有牌同尺寸：宽度按最长名字统一，双字与三字一致；
+            // 直角像素卡（深色外框 + 高光内框）
+            double chipW = Math.Min(_maxNameLen * fontSize + 56, canvasW - 56);
             double chipH = textH + 30;
 
             var chip = GetCardFromPool();
