@@ -249,9 +249,9 @@
             <DoubleAnimationUsingKeyFrames Storyboard.TargetName="BreathRing"
                                            Storyboard.TargetProperty="Opacity"
                                            Duration="0:0:1.2" RepeatBehavior="Forever">
-                <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="0.12"/>
-                <DiscreteDoubleKeyFrame KeyTime="0:0:0.6" Value="0.22"/>
-                <DiscreteDoubleKeyFrame KeyTime="0:0:1.2" Value="0.12"/>
+                <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="0.25"/>
+                <DiscreteDoubleKeyFrame KeyTime="0:0:0.6" Value="0.45"/>
+                <DiscreteDoubleKeyFrame KeyTime="0:0:1.2" Value="0.25"/>
             </DoubleAnimationUsingKeyFrames>
             <DoubleAnimationUsingKeyFrames Storyboard.TargetName="BreathRingScale"
                                            Storyboard.TargetProperty="ScaleX"
