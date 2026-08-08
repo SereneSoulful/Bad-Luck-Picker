@@ -433,8 +433,8 @@ namespace Choose_students
             if (index > 0)
             {
                 fromLeft = index % 2 == 1;
-                startX = chipX + (fromLeft ? -120 : 120);
-                startY = chipY - 100;
+                startX = chipX + (fromLeft ? -190 : 190);
+                startY = chipY - 150;
             }
             else
             {
@@ -446,34 +446,27 @@ namespace Choose_students
             Canvas.SetZIndex(chip, index);
             NameCanvas.Children.Add(chip);
 
-            if (_reducedMotion)
+            // 插入动画始终播放：第一张从下方弹出，
+            // 后续牌交替从左上/右上斜上方插入，落到中心完全覆盖前一张
+            Canvas.SetTop(chip, startY);
+            chip.BeginAnimation(UIElement.OpacityProperty, BuildFadeKeyframes());
+            if (index == 0)
             {
-                Canvas.SetTop(chip, chipY);
-                chip.BeginAnimation(UIElement.OpacityProperty, _quickFade);
+                chip.BeginAnimation(Canvas.TopProperty, BuildMoveKeyframes(chipY));
             }
             else
             {
-                // 三档硬切步进：第一张下方弹出；后续牌从对应斜上方滑入
-                Canvas.SetTop(chip, startY);
-                chip.BeginAnimation(UIElement.OpacityProperty, BuildFadeKeyframes());
-                if (index == 0)
-                {
-                    chip.BeginAnimation(Canvas.TopProperty, BuildMoveKeyframes(chipY));
-                }
-                else
-                {
-                    chip.BeginAnimation(Canvas.LeftProperty,
-                        BuildInsertKeyframes(startX, chipX));
-                    chip.BeginAnimation(Canvas.TopProperty,
-                        BuildInsertKeyframes(startY, chipY));
-                }
-
-                var scale = (ScaleTransform)chip.RenderTransform;
-                scale.ScaleX = 0.8;
-                scale.ScaleY = 0.8;
-                scale.BeginAnimation(ScaleTransform.ScaleXProperty, BuildScaleKeyframes());
-                scale.BeginAnimation(ScaleTransform.ScaleYProperty, BuildScaleKeyframes());
+                chip.BeginAnimation(Canvas.LeftProperty,
+                    BuildInsertKeyframes(startX, chipX));
+                chip.BeginAnimation(Canvas.TopProperty,
+                    BuildInsertKeyframes(startY, chipY));
             }
+
+            var scale = (ScaleTransform)chip.RenderTransform;
+            scale.ScaleX = 0.8;
+            scale.ScaleY = 0.8;
+            scale.BeginAnimation(ScaleTransform.ScaleXProperty, BuildScaleKeyframes());
+            scale.BeginAnimation(ScaleTransform.ScaleYProperty, BuildScaleKeyframes());
 
             // 牌堆厚度：每落一张牌，底部厚度条增高 3px
             UpdateStackThickness(chipW, chipX, chipY, chipH, index + 1);
