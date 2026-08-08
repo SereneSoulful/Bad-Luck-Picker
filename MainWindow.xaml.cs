@@ -345,12 +345,9 @@ namespace Choose_students
             // 点击层位于遮罩之上（ZIndex 200），遮罩本身不拦截输入
             OceanOverlay.IsHitTestVisible = false;
 
-            // Start breathing square
-            if (!_reducedMotion)
-            {
-                var breathRing = (Storyboard)FindResource("BreathRingAnim");
-                breathRing.Begin();
-            }
+            // 呼吸方框与收尾脉冲方框始终成对出现：内圈琥珀呼吸 + 外圈暖红脉冲
+            var breathRing = (Storyboard)FindResource("BreathRingAnim");
+            breathRing.Begin();
 
             _overlayIn.Begin();
         }

@@ -508,9 +508,12 @@
                         </Grid>
                     </Canvas>
 
-                    <!-- 呼吸方框 -->
+                    <!-- 名字像素卡叠放层 -->
+                    <Canvas x:Name="NameCanvas" IsHitTestVisible="False"/>
+
+                    <!-- 双环（置于牌堆之上，完整可见）：内圈琥珀呼吸 + 外圈暖红脉冲 -->
                     <Border x:Name="BreathRing" Opacity="0"
-                            Width="170" Height="170"
+                            Width="210" Height="210"
                             BorderBrush="{StaticResource AmberBrush}" BorderThickness="3"
                             Background="Transparent"
                             HorizontalAlignment="Center" VerticalAlignment="Center"
@@ -533,9 +536,6 @@
                             <ScaleTransform x:Name="PulseRingScale" ScaleX="0.6" ScaleY="0.6"/>
                         </Border.RenderTransform>
                     </Border>
-
-                    <!-- 名字像素卡叠放层 -->
-                    <Canvas x:Name="NameCanvas" IsHitTestVisible="False"/>
 
                     <!-- 跳过提示 -->
                     <TextBlock Text="点击任意位置跳过"
