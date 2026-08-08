@@ -48,6 +48,9 @@ namespace Choose_students
         // 对象池
         private readonly Queue<Border> _cardPool = new Queue<Border>();
 
+        // 牌堆底部厚度条：每落一张牌增高 3px，表现“越堆越厚”
+        private Border _stackThickness;
+
         // 快速淡入（无障碍模式）
         private readonly DoubleAnimation _quickFade;
 
@@ -324,6 +327,10 @@ namespace Choose_students
             ClearAllTimers();
             StopIdleAmbient();
 
+            if (_stackThickness != null && NameCanvas.Children.Contains(_stackThickness))
+                NameCanvas.Children.Remove(_stackThickness);
+            _stackThickness = null;
+
             foreach (var child in NameCanvas.Children)
                 if (child is Border b) RecycleCard(b);
             NameCanvas.Children.Clear();
@@ -372,10 +379,6 @@ namespace Choose_students
             else if (total <= 18) { fontSize = 26; }
             else                  { fontSize = 21; }
 
-            // 第一张是居中的大主牌，后续插入的牌彼此同尺寸
-            bool isLead = index == 0;
-            if (isLead) fontSize += 8;
-
             var text = new TextBlock
             {
                 Text = name,
@@ -391,13 +394,9 @@ namespace Choose_students
             double textW = text.DesiredSize.Width;
             double textH = text.DesiredSize.Height;
 
-            // 直角像素卡：深色外框 + 高光内框
-            double chipW = isLead
-                ? Math.Min(textW + 72, canvasW - 48)
-                : Math.Min(textW + 56, canvasW - 56);
-            double chipH = isLead
-                ? textH + 40
-                : textH + 30;
+            // 所有牌同尺寸：直角像素卡（深色外框 + 高光内框）
+            double chipW = Math.Min(textW + 56, canvasW - 56);
+            double chipH = textH + 30;
 
             var chip = GetCardFromPool();
             chip.Width = chipW;
@@ -417,29 +416,22 @@ namespace Choose_students
                 Child = text
             };
 
-            // 牌堆叠放：主牌居中；后续牌从斜上方交替插入，
-            // 左一张右一张地错位覆盖，牌堆逐层变厚（ZIndex 递增）
-            double anchorX = (canvasW - chipW) / 2.0;
-            double anchorY = canvasH / 2.0 - chipH / 2.0 - 14;
-            double chipX = anchorX;
-            double chipY = anchorY;
+            // 牌堆叠放：所有牌完全重叠在中心，后一张彻底盖住前一张；
+            // 后续牌从斜上方交替插入（奇数张左上、偶数张右上），ZIndex 递增
+            double chipX = (canvasW - chipW) / 2.0;
+            double chipY = canvasH / 2.0 - chipH / 2.0 - 14;
             double startX = chipX;
             double startY = chipY;
             bool fromLeft = true;
-            if (!isLead)
+            if (index > 0)
             {
-                // 奇数张从左上插入，偶数张从右上插入
                 fromLeft = index % 2 == 1;
-                double offset = Math.Min(34, 12 + index * 3);
-                double offsetY = Math.Min(26, 8 + index * 2);
-                chipX = anchorX + (fromLeft ? -offset : offset);
-                chipY = anchorY - offsetY;
-                startX = chipX + (fromLeft ? -110 : 110);
-                startY = chipY - 90;
+                startX = chipX + (fromLeft ? -120 : 120);
+                startY = chipY - 100;
             }
             else
             {
-                // 主牌从下方三档硬切弹出
+                // 第一张从下方三档硬切弹出
                 startY = chipY + 40;
             }
 
@@ -454,10 +446,10 @@ namespace Choose_students
             }
             else
             {
-                // 三档硬切步进：主牌下方弹出；副牌从对应斜上方滑入
+                // 三档硬切步进：第一张下方弹出；后续牌从对应斜上方滑入
                 Canvas.SetTop(chip, startY);
                 chip.BeginAnimation(UIElement.OpacityProperty, BuildFadeKeyframes());
-                if (isLead)
+                if (index == 0)
                 {
                     chip.BeginAnimation(Canvas.TopProperty, BuildMoveKeyframes(chipY));
                 }
@@ -474,9 +466,31 @@ namespace Choose_students
                 scale.BeginAnimation(ScaleTransform.ScaleYProperty, BuildScaleKeyframes());
             }
 
+            // 牌堆厚度：每落一张牌，底部厚度条增高 3px
+            UpdateStackThickness(chipW, chipX, chipY, chipH, index + 1);
+
             double interval = total == 1 ? 520 : 360;
             var timer = CreateTimer(TimeSpan.FromMilliseconds(interval), onComplete);
             timer.Start();
+        }
+
+        private void UpdateStackThickness(
+            double chipW, double chipX, double chipY, double chipH, int layers)
+        {
+            if (_stackThickness == null)
+            {
+                _stackThickness = new Border
+                {
+                    Background = _cardBorderBrush,
+                    BorderThickness = new Thickness(0)
+                };
+                Canvas.SetZIndex(_stackThickness, -1);
+                NameCanvas.Children.Add(_stackThickness);
+            }
+            _stackThickness.Width = chipW - 6;
+            _stackThickness.Height = layers * 3;
+            Canvas.SetLeft(_stackThickness, chipX + 3);
+            Canvas.SetTop(_stackThickness, chipY + chipH);
         }
 
         // ===== 像素硬切动画辅助 =====
@@ -587,6 +601,7 @@ namespace Choose_students
             PulseRing.Opacity = 0;
             BreathRing.Opacity = 0;
             ((Storyboard)FindResource("BreathRingAnim")).Stop();
+            _stackThickness = null;
 
             var lines = new List<string>();
             for (int i = 0; i < _pendingResults.Count; i += 3)
