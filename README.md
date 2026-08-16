@@ -115,6 +115,8 @@ Bad-Luck-Picker/
 │   ├── Resources.resx          # 资源文件
 │   └── Settings.settings       # 应用程序设置
 ├── 优化界面.ico                # 像素风应用图标
+├── tools/
+│   └── generate_ico.py         # 图标生成脚本（16×16 像素网格 → 16/32/48/64 多尺寸 ICO）
 ├── Fonts/
 │   ├── FusionPixel12.ttf       # 嵌入的开源像素中文字体（SIL OFL 1.1）
 │   └── OFL.txt                 # 字体许可证
@@ -197,6 +199,13 @@ private readonly List<string> _students = new List<string>
 - **插牌**：第一张从下方弹出，后续牌从斜上方交替插入（奇数张左上、偶数张右上），三档硬切滑入
 - **厚度**：牌堆底部厚度条每落一张牌增高 3px，`Canvas.ZIndex` 递增，牌堆越堆越厚
 - **收尾**：内圈深绿呼吸环与外圈暖红脉冲环成对出现，放大扩散后遮罩淡出
+
+### 应用图标
+
+- **意象**：扑克牌（点名卡牌动画）+ 五点骰子（公平随机抽取）+ 琥珀角标（仪式感星光）+ 底部深棕牌堆条（插牌厚度/硬阴影）
+- **构图**：16×16 像素网格，1px 深棕外框，暖纸面打底；居中白卡内嵌深边暖红骰面，五点白点一眼可辨，避免旧版四点在 16px 下被误读成设置网格
+- **配色**：全部取自 `App.xaml` 调色板资源键（CardFill / AccentBrush / BorderDark / PaperBackdrop / AmberBrush），不引入新色
+- **生成**：`python tools/generate_ico.py --out 优化界面.ico --preview icon-preview.png`，最近邻放大输出 16/32/48/64 四档 PNG-in-ICO
 
 ### 性能优化
 
