@@ -88,3 +88,12 @@ Thumbs.db
 # Application Insights
 **/AppInsights.config
 **/Connected Services/
+
+# 本地个人配置与工具数据（不上传）
+AGENTS.md
+docs/
+.codegraph/
+.reasonix/
+build_output.txt
+_private/
+Lina*.png
