@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build (Release)
+        run: msbuild "Choose students.sln" /p:Configuration=Release /p:Platform="Any CPU" /v:minimal /nologo
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Choose-students
+          path: bin/Release/Choose students.exe

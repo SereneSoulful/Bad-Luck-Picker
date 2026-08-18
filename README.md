@@ -7,6 +7,7 @@
 [![Platform](https://img.shields.io/badge/platform-Windows-blue?logo=windows)](https://www.microsoft.com/windows)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![WPF](https://img.shields.io/badge/UI-WPF-5C2D91?logo=windows)](https://learn.microsoft.com/zh-cn/dotnet/desktop/wpf/)
+[![CI](https://github.com/SereneSoulful/Bad-Luck-Picker/actions/workflows/ci.yml/badge.svg)](https://github.com/SereneSoulful/Bad-Luck-Picker/actions/workflows/ci.yml)
 
 ---
 
@@ -122,6 +123,12 @@ Bad-Luck-Picker/
 │   └── OFL.txt                 # 字体许可证
 └── .gitignore
 ```
+
+---
+
+## 📥 下载
+
+前往 [Releases 页面](https://github.com/SereneSoulful/Bad-Luck-Picker/releases) 下载最新版 `Choose.students.exe`（当前最新：v4.0.0），双击直接运行，无需安装。
 
 ---
 
